@@ -1,9 +1,14 @@
 package com.example.cookieclicker;
 
+import android.animation.Animator;
 import android.annotation.SuppressLint;
+import android.graphics.Color;
+import android.graphics.fonts.Font;
 import android.os.Bundle;
 import android.view.View;
 import android.view.ViewGroup;
+import android.view.animation.AlphaAnimation;
+import android.widget.ImageButton;
 import android.widget.TextView;
 
 import androidx.appcompat.app.AppCompatActivity;
@@ -11,6 +16,52 @@ import androidx.constraintlayout.widget.ConstraintLayout;
 import androidx.constraintlayout.widget.ConstraintSet;
 
 public class MainActivity extends AppCompatActivity {
+    private final String incrementString = "+%.1f gold!";
+
+    private float clickPower = 1;
+    private ImageButton coinButton;
+    private ConstraintLayout constraintLayout;
+
+    @SuppressLint("DefaultLocale")
+    public void addIncrementParticle()
+    {
+        final TextView view = new TextView(this);
+        view.setId(View.generateViewId());
+        view.setTextSize(24);
+        view.setTextColor(Color.YELLOW);
+        view.setText(String.format(incrementString, clickPower));
+
+        ConstraintLayout.LayoutParams params = new ConstraintLayout.LayoutParams(
+            new ViewGroup.LayoutParams(ConstraintLayout.LayoutParams.WRAP_CONTENT, ConstraintLayout.LayoutParams.WRAP_CONTENT
+        ));
+
+        constraintLayout.addView(view, 1, params);
+
+        ConstraintSet constraintSet = new ConstraintSet();
+        constraintSet.clone(constraintLayout);
+        constraintSet.centerVertically(
+            view.getId(),
+            constraintLayout.getId(),
+            ConstraintSet.TOP,
+            0,
+            constraintLayout.getId(),
+            ConstraintSet.BOTTOM,
+            0,
+            (float) Math.random() * .3f + .5f
+        );
+        constraintSet.centerHorizontally(view.getId(),
+            constraintLayout.getId(),
+            ConstraintSet.LEFT,
+            0,
+            constraintLayout.getId(),
+            ConstraintSet.RIGHT,
+            0,
+            (float) Math.random() * .3f + .5f
+        );
+
+        constraintSet.applyTo(constraintLayout);
+        view.animate().setDuration(500).alpha(1f).setStartDelay(100).translationY(-250).setListener(new FadeOutAnimation(view)).start();
+    }
 
     @SuppressLint("SetTextI18n")
     @Override
@@ -18,24 +69,89 @@ public class MainActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
-        ConstraintLayout constraintLayout = findViewById(R.id.mainLayout);
+        constraintLayout = findViewById(R.id.mainLayout);
+        coinButton = findViewById(R.id.imageButton5);
+        coinButton.setOnClickListener(this::onClick);
 
-        TextView view = new TextView(this);
-        view.setId(View.generateViewId());
-        view.setText("Hello everyone!");
+        addIncrementParticle();
+    }
 
-        ConstraintLayout.LayoutParams params = new ConstraintLayout.LayoutParams(
-            new ViewGroup.LayoutParams(ConstraintLayout.LayoutParams.WRAP_CONTENT, ConstraintLayout.LayoutParams.WRAP_CONTENT
-        ));
+    public void onClick(View v)
+    {
+        addIncrementParticle();
+        coinButton.animate().scaleX(1.2f).scaleY(1.2f).rotation(180).setListener(new Animator.AnimatorListener() {
+            @Override
+            public void onAnimationStart(Animator animation) {
 
-        ConstraintSet constraintSet = new ConstraintSet();
-        constraintSet.clone(constraintLayout);
-        constraintSet.connect(view.getId(), ConstraintSet.TOP, constraintLayout.getId(), ConstraintSet.RIGHT);
-        constraintSet.setHorizontalBias(view.getId(), .8f);
+            }
 
-        constraintSet.applyTo(constraintLayout);
+            @Override
+            public void onAnimationEnd(Animator animation) {
+                coinButton.animate().scaleX(.8f).scaleY(.8f).rotation(360).setListener(new Animator.AnimatorListener() {
+                    @Override
+                    public void onAnimationStart(Animator animation) {
 
-        view.setLayoutParams(params);
-        constraintLayout.addView(view);
+                    }
+
+                    @Override
+                    public void onAnimationEnd(Animator animation) {
+                        coinButton.setRotation(0);
+                    }
+
+                    @Override
+                    public void onAnimationCancel(Animator animation) {
+
+                    }
+
+                    @Override
+                    public void onAnimationRepeat(Animator animation) {
+
+                    }
+                }).start();
+            }
+
+            @Override
+            public void onAnimationCancel(Animator animation) {
+
+            }
+
+            @Override
+            public void onAnimationRepeat(Animator animation) {
+
+            }
+        }).start();
+    }
+
+    class FadeOutAnimation implements Animator.AnimatorListener
+    {
+        private View view;
+
+        public FadeOutAnimation(View view)
+        {
+            this.view = view;
+        }
+
+        @Override
+        public void onAnimationStart(Animator animation) {
+
+        }
+
+        @Override
+        public void onAnimationCancel(Animator animation) {
+
+        }
+
+        @Override
+        public void onAnimationRepeat(Animator animation) {
+
+        }
+
+        @Override
+        public void onAnimationEnd(Animator animation) {
+            AlphaAnimation animation2 = new AlphaAnimation(1.0f, 0.0f);
+            animation2.setDuration(200);
+            view.startAnimation(animation2);
+            ((ViewGroup) view.getParent()).removeView(view);
+        }
     }
 }
