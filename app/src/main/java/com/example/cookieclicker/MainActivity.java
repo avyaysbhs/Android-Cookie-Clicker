@@ -8,12 +8,19 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.view.animation.AlphaAnimation;
 import android.widget.ImageButton;
+import android.widget.LinearLayout;
+import android.widget.Space;
 import android.widget.TextView;
 
+import androidx.annotation.DrawableRes;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.constraintlayout.widget.ConstraintLayout;
 import androidx.constraintlayout.widget.ConstraintSet;
 
+import java.io.BufferedInputStream;
+import java.io.DataInputStream;
+import java.io.IOException;
+import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -28,6 +35,44 @@ public class MainActivity extends AppCompatActivity {
     private TextView goldView;
     private ImageButton coinButton;
     private ConstraintLayout constraintLayout;
+
+    public LinearLayout createItemButton(@DrawableRes int resId, ProductionAsset asset)
+    {
+        LinearLayout out = new LinearLayout(this);
+        out.setLayoutParams(
+            new LinearLayout.LayoutParams(ConstraintLayout.LayoutParams.MATCH_PARENT, ConstraintLayout.LayoutParams.MATCH_PARENT)
+        );
+        out.setOrientation(LinearLayout.VERTICAL);
+        ImageButton button = new ImageButton(this);
+        button.setImageDrawable(getResources().getDrawable(resId, getTheme()));
+        //button.setPadding(5, 5, 5, 5);
+
+        button.setLayoutParams(
+            new ViewGroup.LayoutParams(ConstraintLayout.LayoutParams.WRAP_CONTENT, ConstraintLayout.LayoutParams.WRAP_CONTENT)
+        );
+        TextView textView = new TextView(this);
+        textView.setLayoutParams(button.getLayoutParams());
+        textView.setText(asset.name + " - " + asset.cost);
+        out.addView(textView);
+        out.addView(button);
+
+        button.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                if (buyAsset(asset)) {
+                    textView.setTextColor(Color.GREEN);
+                    textView.setText(asset.name + " ✅ ");
+                }
+            }
+        });
+
+        if (assets.contains(asset)) {
+            textView.setTextColor(Color.GREEN);
+            textView.setText(asset.name + " ✅ ");
+        }
+
+        return out;
+    }
 
     @SuppressLint("DefaultLocale")
     public void addIncrementParticle()
@@ -71,11 +116,29 @@ public class MainActivity extends AppCompatActivity {
         view.animate().setDuration(500).alpha(1f).setStartDelay(100).translationY(-250).setListener(new FadeOutAnimation(view)).start();
     }
 
+    String gold_string;
+
     @SuppressLint("SetTextI18n")
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
+
+        try
+        {
+            InputStream in = this.openFileInput("config.txt");
+
+            if (in != null)
+            {
+                DataInputStream in2 = new DataInputStream(in);
+                // read lines??
+            }
+        } catch (IOException e)
+        {
+
+        }
+
+        gold_string = getString(R.string.gold_string);
 
         constraintLayout = findViewById(R.id.mainLayout);
         goldView = findViewById(R.id.counter);
@@ -95,7 +158,19 @@ public class MainActivity extends AppCompatActivity {
             }
         }).start();
 
-        addIncrementParticle();
+        LinearLayout factoriesLayout = findViewById(R.id.factoriesLayout);
+        LinearLayout clickersLayout = findViewById(R.id.clickersLayout);
+
+        ProductionAsset.clickersForSale.forEach((a, b) -> {
+            clickersLayout.addView(createItemButton(b.imageResId, b));
+            clickersLayout.addView(new Space(this));
+        });
+
+        ProductionAsset.factoriesForSale.forEach((a, b) -> {
+            factoriesLayout.addView(createItemButton(b.imageResId, b));
+            factoriesLayout.addView(new Space(this));
+        });
+
     }
 
     public void updateAssets(float deltaTime)
@@ -149,22 +224,26 @@ public class MainActivity extends AppCompatActivity {
         }).start();
     }
 
-    public void buyAsset(ProductionAsset asset)
-    {
-        if (!assets.contains(asset))
-            assets.add(asset);
+    public boolean buyAsset(ProductionAsset asset) {
+        if (assets.contains(asset)) return true;
+        if (gold < asset.cost) return false;
+
+        gold -= asset.cost;
+        assets.add(asset);
 
         float cp = 1;
         for (ProductionAsset ast: assets)
             cp += ast.clickPower;
 
         clickPower = cp;
+
+        return true;
     }
 
     public void incrementGold(float amount)
     {
         gold += amount;
-        goldView.setText(gold + " gold");
+        goldView.setText(String.format(gold_string, gold));
     }
 
     class FadeOutAnimation implements Animator.AnimatorListener

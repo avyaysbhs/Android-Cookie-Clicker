@@ -1,3 +1,4 @@
 <resources>
     <string name="app_name" translatable="true">Cookie Clicker</string>
+    <string name="gold_string">%.2f gold</string>
 </resources>
