@@ -3,7 +3,6 @@ package com.example.cookieclicker;
 import android.animation.Animator;
 import android.annotation.SuppressLint;
 import android.graphics.Color;
-import android.graphics.fonts.Font;
 import android.os.Bundle;
 import android.view.View;
 import android.view.ViewGroup;
@@ -15,16 +14,25 @@ import androidx.appcompat.app.AppCompatActivity;
 import androidx.constraintlayout.widget.ConstraintLayout;
 import androidx.constraintlayout.widget.ConstraintSet;
 
+import java.util.ArrayList;
+import java.util.List;
+
 public class MainActivity extends AppCompatActivity {
-    private final String incrementString = "+%.1f gold!";
+    private static final String incrementString = "+%.1f gold!";
 
     private float clickPower = 1;
+    private float gold = 0;
+
+    List<ProductionAsset> assets = new ArrayList<>();
+
+    private TextView goldView;
     private ImageButton coinButton;
     private ConstraintLayout constraintLayout;
 
     @SuppressLint("DefaultLocale")
     public void addIncrementParticle()
     {
+        incrementGold(clickPower);
         final TextView view = new TextView(this);
         view.setId(View.generateViewId());
         view.setTextSize(24);
@@ -47,7 +55,7 @@ public class MainActivity extends AppCompatActivity {
             constraintLayout.getId(),
             ConstraintSet.BOTTOM,
             0,
-            (float) Math.random() * .3f + .5f
+            (float) Math.random() * .3f + .35f
         );
         constraintSet.centerHorizontally(view.getId(),
             constraintLayout.getId(),
@@ -56,7 +64,7 @@ public class MainActivity extends AppCompatActivity {
             constraintLayout.getId(),
             ConstraintSet.RIGHT,
             0,
-            (float) Math.random() * .3f + .5f
+            (float) Math.random() * .3f + .35f
         );
 
         constraintSet.applyTo(constraintLayout);
@@ -70,16 +78,35 @@ public class MainActivity extends AppCompatActivity {
         setContentView(R.layout.activity_main);
 
         constraintLayout = findViewById(R.id.mainLayout);
+        goldView = findViewById(R.id.counter);
         coinButton = findViewById(R.id.imageButton5);
         coinButton.setOnClickListener(this::onClick);
 
+        new Thread(() ->
+        {
+            while (true)
+            {
+                try {
+                    Thread.sleep(250L);
+                    updateAssets(.25f);
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                }
+            }
+        }).start();
+
         addIncrementParticle();
+    }
+
+    public void updateAssets(float deltaTime)
+    {
+        assets.forEach(e -> incrementGold(deltaTime * e.rate));
     }
 
     public void onClick(View v)
     {
         addIncrementParticle();
-        coinButton.animate().scaleX(1.2f).scaleY(1.2f).rotation(180).setListener(new Animator.AnimatorListener() {
+        coinButton.animate().scaleX(1.2f).scaleY(1.2f).rotation(180).setDuration(75).setListener(new Animator.AnimatorListener() {
             @Override
             public void onAnimationStart(Animator animation) {
 
@@ -87,7 +114,7 @@ public class MainActivity extends AppCompatActivity {
 
             @Override
             public void onAnimationEnd(Animator animation) {
-                coinButton.animate().scaleX(.8f).scaleY(.8f).rotation(360).setListener(new Animator.AnimatorListener() {
+                coinButton.animate().scaleX(.8f).scaleY(.8f).rotation(360).setDuration(90).setListener(new Animator.AnimatorListener() {
                     @Override
                     public void onAnimationStart(Animator animation) {
 
@@ -120,6 +147,24 @@ public class MainActivity extends AppCompatActivity {
 
             }
         }).start();
+    }
+
+    public void buyAsset(ProductionAsset asset)
+    {
+        if (!assets.contains(asset))
+            assets.add(asset);
+
+        float cp = 1;
+        for (ProductionAsset ast: assets)
+            cp += ast.clickPower;
+
+        clickPower = cp;
+    }
+
+    public void incrementGold(float amount)
+    {
+        gold += amount;
+        goldView.setText(gold + " gold");
     }
 
     class FadeOutAnimation implements Animator.AnimatorListener
