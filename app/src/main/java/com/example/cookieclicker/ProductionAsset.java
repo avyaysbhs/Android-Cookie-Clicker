@@ -2,11 +2,13 @@ package com.example.cookieclicker;
 
 import androidx.annotation.DrawableRes;
 
-import java.util.HashMap;
+import java.io.Serializable;
 import java.util.LinkedHashMap;
 
 @SuppressWarnings("WeakerAccess")
-public class ProductionAsset {
+public class ProductionAsset implements Serializable {
+    public final static long serialVersionUID = 1000L;
+
     final String name;
     final float rate;
     final float clickPower;
@@ -23,8 +25,8 @@ public class ProductionAsset {
 
     static {
         new ProductionAsset("Gold Miner", 3f, 0f, 60, FACTORY_ASSET, R.mipmap.miner_foreground);
-        new ProductionAsset("Gold Mine", 30f, 0f, 100, FACTORY_ASSET, R.mipmap.ironaxe_foreground);
-        new ProductionAsset("Village of Miners", 150f, 0f, 300, FACTORY_ASSET, R.mipmap.ironaxe_foreground);
+        new ProductionAsset("Gold Mine", 30f, 0f, 100, FACTORY_ASSET, R.mipmap.mine_foreground);
+        new ProductionAsset("Village of Miners", 150f, 0f, 300, FACTORY_ASSET, R.mipmap.minervillage_foreground);
         new ProductionAsset("TNT", 250f, 25f, 15500, FACTORY_ASSET, R.mipmap.tnt_foreground);
 
         new ProductionAsset("Wooden Pickaxe", 0f, .2f, 10, CLICK_ASSET, R.mipmap.woodenaxe_foreground);

@@ -4,6 +4,7 @@ import android.animation.Animator;
 import android.annotation.SuppressLint;
 import android.graphics.Color;
 import android.os.Bundle;
+import android.util.Log;
 import android.view.View;
 import android.view.ViewGroup;
 import android.view.animation.AlphaAnimation;
@@ -17,11 +18,13 @@ import androidx.appcompat.app.AppCompatActivity;
 import androidx.constraintlayout.widget.ConstraintLayout;
 import androidx.constraintlayout.widget.ConstraintSet;
 
-import java.io.BufferedInputStream;
-import java.io.DataInputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
+import java.io.OutputStream;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 public class MainActivity extends AppCompatActivity {
@@ -130,12 +133,16 @@ public class MainActivity extends AppCompatActivity {
 
             if (in != null)
             {
-                DataInputStream in2 = new DataInputStream(in);
-                // read lines??
+                ObjectInputStream objectInputStream = new ObjectInputStream(in);
+                GameData data = ((GameData) objectInputStream.readObject());
+                Arrays.asList(data.assets).forEach(e ->
+                    assets.add(e.type == ProductionAsset.CLICK_ASSET ? ProductionAsset.clickersForSale.get(e.name) : ProductionAsset.factoriesForSale.get(e.name)));
+                this.gold = data.gold;
+                revalidateCP();
             }
-        } catch (IOException e)
+        } catch (IOException | ClassCastException | ClassNotFoundException e)
         {
-
+            Log.e(e.getClass().getName(), e.getMessage(), e);
         }
 
         gold_string = getString(R.string.gold_string);
@@ -171,6 +178,7 @@ public class MainActivity extends AppCompatActivity {
             factoriesLayout.addView(new Space(this));
         });
 
+        goldView.setText(String.format(gold_string, gold));
     }
 
     public void updateAssets(float deltaTime)
@@ -224,6 +232,40 @@ public class MainActivity extends AppCompatActivity {
         }).start();
     }
 
+    @Override
+    protected void onPause() {
+        super.onPause();
+        try
+        {
+            OutputStream out = this.openFileOutput("config.txt", MODE_PRIVATE);
+
+            if (out != null)
+            {
+                ObjectOutputStream objectOutputStream = new ObjectOutputStream(out);
+                GameData data = new GameData();
+                data.gold = this.gold;
+                data.assets = new ProductionAsset[assets.size()];
+                for (int i=0;i<assets.size();i++)
+                    data.assets[i] = assets.get(i);
+                objectOutputStream.writeObject(data);
+                objectOutputStream.flush();
+                objectOutputStream.close();
+            }
+        } catch (IOException | ClassCastException e)
+        {
+            Log.e(e.getClass().getName(), e.getMessage(), e);
+        }
+    }
+
+    private void revalidateCP()
+    {
+        float cp = 1;
+        for (ProductionAsset ast: assets)
+            cp += ast.clickPower;
+
+        clickPower = cp;
+    }
+
     public boolean buyAsset(ProductionAsset asset) {
         if (assets.contains(asset)) return true;
         if (gold < asset.cost) return false;
@@ -231,11 +273,7 @@ public class MainActivity extends AppCompatActivity {
         gold -= asset.cost;
         assets.add(asset);
 
-        float cp = 1;
-        for (ProductionAsset ast: assets)
-            cp += ast.clickPower;
-
-        clickPower = cp;
+        revalidateCP();
 
         return true;
     }
